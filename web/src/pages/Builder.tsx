@@ -262,7 +262,7 @@ export default function Builder() {
 
   const share = () => {
     const encoded = compressToEncodedURIComponent(JSON.stringify(history.state));
-    const url = `${location.origin}${location.pathname}#/builder?${encoded}`;
+    const url = `${location.origin}/builder#${encoded}`;
     navigator.clipboard.writeText(url);
     toast("Share link copied to clipboard");
   };
