@@ -5,6 +5,9 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Moon, Sun, Play, ShieldCheck, Rocket, Palette, Smartphone, RefreshCw, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+import Builder from "./pages/Builder";
+import Docs from "./pages/Docs";
 
 function useTheme() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
@@ -99,17 +102,26 @@ function Sparkles() {
 function Header({ active }: { active: string }) {
   const { theme, setTheme } = useTheme();
   const scrolled = useHeader();
+  const navigate = useNavigate();
+  const location = useLocation();
   const links = [
     { id: "features", label: "Features" },
     { id: "demo", label: "Demo" },
     { id: "pricing", label: "Pricing" },
-    { id: "docs", label: "Docs" },
   ];
+  const goToSection = (id: string) => {
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => smoothScrollTo(id), 50);
+    } else {
+      smoothScrollTo(id);
+    }
+  };
   return (
     <header id="site-header" className={cn("header-blur", scrolled && "header-scrolled")}>
       <nav className="mx-auto flex max-w-screen-xl items-center justify-between px-6 py-4">
         <div className="text-xl font-bold">
-          <span className="bg-gradient-to-r from-rose-400 to-teal-300 bg-clip-text text-transparent">Loveable</span>
+          <Link to="/" className="bg-gradient-to-r from-rose-400 to-teal-300 bg-clip-text text-transparent">Loveable</Link>
         </div>
         <ul className="hidden items-center gap-8 md:flex">
           {links.map((l) => (
@@ -118,7 +130,7 @@ function Header({ active }: { active: string }) {
                 href={`#${l.id}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  smoothScrollTo(`#${l.id}`);
+                  goToSection(`#${l.id}`);
                 }}
                 aria-current={active === l.id ? "page" : undefined}
                 className={cn(
@@ -131,10 +143,11 @@ function Header({ active }: { active: string }) {
             </li>
           ))}
           <li>
+            <Link to="/docs" className="text-sm transition-colors hover:text-primary">Docs</Link>
+          </li>
+          <li>
             <Button className="btn-primary" asChild>
-              <a href="#start" onClick={(e) => { e.preventDefault(); smoothScrollTo("#demo"); }}>
-                Start Building
-              </a>
+              <Link to="/builder">Start Building</Link>
             </Button>
           </li>
         </ul>
@@ -391,16 +404,28 @@ function Footer() {
 }
 
 export default function App() {
+  const location = useLocation();
   useScrollAnimations();
   const active = useActiveSection(["features", "demo", "pricing"]);
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <Header active={active} />
       <main>
-        <Hero />
-        <Features />
-        <Demo />
-        <Pricing />
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <Hero />
+                <Features />
+                <Demo />
+                <Pricing />
+              </>
+            }
+          />
+          <Route path="/builder" element={<Builder />} />
+          <Route path="/docs" element={<Docs />} />
+        </Routes>
       </main>
       <Footer />
       <Sparkles />
