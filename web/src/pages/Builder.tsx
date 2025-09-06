@@ -155,10 +155,15 @@ function genNextApiFiles(ir: IR): Record<string, string> {
   files["/.env.example"] = `# Required: set the Postgres connection URL\nDATABASE_URL=postgresql://user:pass@host:5432/db\n# JWT secret for signing tokens\nJWT_SECRET=change-me`;
   files["/prisma/schema.prisma"] = genPrisma(ir);
 
-  // Auth routes
+  // Auth routes (JWT by default)
   files["/app/api/auth/login/route.ts"] = `import { NextRequest, NextResponse } from 'next/server'\nimport jwt from 'jsonwebtoken'\nimport bcrypt from 'bcryptjs'\nimport { PrismaClient } from '@prisma/client'\nconst prisma = new PrismaClient()\nexport async function POST(req: NextRequest){\n  const { email, password } = await req.json()\n  // In production add rate-limit and validation\n  const user = await prisma.user.findUnique({ where: { email } })\n  if(!user || !bcrypt.compareSync(password, user.passwordHash)) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })\n  const token = jwt.sign({ sub: user.id, email }, process.env.JWT_SECRET!, { expiresIn: '1d' })\n  return NextResponse.json({ token })\n}`;
 
   files["/app/api/auth/register/route.ts"] = `import { NextRequest, NextResponse } from 'next/server'\nimport bcrypt from 'bcryptjs'\nimport { PrismaClient } from '@prisma/client'\nconst prisma = new PrismaClient()\nexport async function POST(req: NextRequest){\n  const { email, password } = await req.json()\n  const existing = await prisma.user.findUnique({ where: { email } })\n  if(existing) return NextResponse.json({ error: 'Email taken' }, { status: 409 })\n  const passwordHash = bcrypt.hashSync(password, 10)\n  const user = await prisma.user.create({ data: { email, passwordHash } })\n  return NextResponse.json({ id: user.id, email: user.email })\n}`;
+
+  if (ir.auth.type === 'oauth') {
+    files["/NOTES_OAUTH.md"] = `# OAuth Setup (Assumption: NextAuth.js)\n\n- Install next-auth, configure providers in \`.env\` e.g. GITHUB_ID/GITHUB_SECRET.\n- Protect API routes with session checks.\n- See https://next-auth.js.org/ for full setup.\n`;
+    files["/app/api/auth/oauth/route.ts"] = `import { NextResponse } from 'next/server'\n// Placeholder: Use NextAuth.js for OAuth providers (GitHub/Google/etc.)\nexport async function GET(){ return NextResponse.json({ error: 'Use NextAuth.js for OAuth' }, { status: 501 }) }`;
+  }
 
   // CRUD routes for models
   for (const m of ir.models) {
