@@ -6,8 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast, Toaster } from "@/components/ui/sonner";
-import { Copy, Download, Redo2, Undo2, Share2, Play, GitBranch, Settings2 } from "lucide-react";
+import { Copy, Download, Redo2, Undo2, Share2, Play } from "lucide-react";
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor } from "@codesandbox/sandpack-react";
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from "lz-string";
 import JSZip from "jszip";
@@ -244,16 +246,19 @@ function downloadZip(project: Project) {
 // ---------------- UI ----------------
 export default function Builder() {
   const [input, setInput] = useState("build login page with Tailwind and JWT auth, add dashboard with task list");
+  const [useAI, setUseAI] = useState(true);
+  const [loading, setLoading] = useState(false);
   const history = useHistory<Project>(buildProject(input));
 
-  // live preview update when input changes
+  // live preview update when input changes (when not using AI auto-build)
   useEffect(() => {
+    if (useAI) return; // AI mode builds on explicit action
     const id = setTimeout(() => {
       history.set(buildProject(input));
     }, 400);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input]);
+  }, [input, useAI]);
 
   useEffect(() => {
     // restore from URL if present, else localStorage
@@ -300,14 +305,51 @@ export default function Builder() {
       <p className="text-muted-foreground mt-1">Type a command. We'll interpret it, generate code, and live-preview the UI. Backend/API and Prisma schema are generated too.</p>
 
       <Card className="mt-6 p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start">
           <Textarea value={input} onChange={(e)=>setInput(e.target.value)} className="min-h-20" placeholder="e.g. build login page with Tailwind and JWT auth" />
-          <div className="flex gap-2 md:self-start">
-            <Button onClick={()=>history.set(buildProject(input))}><Play className="mr-2 h-4 w-4"/>Build</Button>
-            <Button variant="outline" onClick={history.undo} disabled={!history.canUndo}><Undo2 className="mr-2 h-4 w-4"/>Undo</Button>
-            <Button variant="outline" onClick={history.redo} disabled={!history.canRedo}><Redo2 className="mr-2 h-4 w-4"/>Redo</Button>
-            <Button variant="outline" onClick={share}><Share2 className="mr-2 h-4 w-4"/>Share</Button>
-            <Button variant="outline" onClick={()=>downloadZip(history.state)}><Download className="mr-2 h-4 w-4"/>Download</Button>
+          <div className="flex flex-col gap-2 md:pl-2">
+            <div className="flex items-center gap-3">
+              <Switch checked={useAI} onCheckedChange={setUseAI} id="use-ai" />
+              <Label htmlFor="use-ai" className="text-sm">Use GLM-4.5 (ZhipuAI) for generation</Label>
+            </div>
+            <div className="text-xs text-muted-foreground">Model: glm-4.5 • JSON mode • temp 0.2</div>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <Button onClick={async()=>{
+                if (useAI) {
+                  setLoading(true);
+                  const t = toast("Generating with GLM-4.5...", { description: "This may take a few seconds" });
+                  try {
+                    const res = await fetch("/api/ai/generate", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ command: input, existingProject: history.state, model: "glm-4.5", stream: false })
+                    });
+                    const data = await res.json();
+                    if (data?.project) {
+                      history.set(data.project);
+                      toast.dismiss(t);
+                      toast.success("Project updated with GLM-4.5");
+                    } else {
+                      toast.dismiss(t);
+                      toast.error(data?.error || "Model returned no project JSON. Falling back to local generator.");
+                      history.set(buildProject(input));
+                    }
+                  } catch (e:any) {
+                    toast.dismiss(t);
+                    toast.error("AI call failed. Using local generator.");
+                    history.set(buildProject(input));
+                  } finally { setLoading(false); }
+                } else {
+                  history.set(buildProject(input));
+                }
+              }} disabled={loading}>
+                <Play className="mr-2 h-4 w-4"/>{loading ? "Building..." : "Build"}
+              </Button>
+              <Button variant="outline" onClick={history.undo} disabled={!history.canUndo}>Undo</Button>
+              <Button variant="outline" onClick={history.redo} disabled={!history.canRedo}>Redo</Button>
+              <Button variant="outline" onClick={share}>Share</Button>
+              <Button variant="outline" onClick={()=>downloadZip(history.state)}>Download</Button>
+            </div>
           </div>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
