@@ -137,6 +137,7 @@ function genNextApiFiles(ir: IR): Record<string, string> {
   const files: Record<string, string> = {};
   // Basic app router structure
   files["/app/page.tsx"] = `export default function Home(){ return <main>Loveable App</main> }`;
+  files["/.github/workflows/ci.yml"] = `name: CI\non: [push, pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n      - run: npm ci || npm i\n      - run: npm run build\n`;
   files["/package.json"] = `{
   "name": "loveable-app",
   "private": true,
