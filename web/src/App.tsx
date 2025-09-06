@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Moon, Sun, Play, ShieldCheck, Rocket, Palette, Smartphone, RefreshCw, Users } from "lucide-react";
+import { Moon, Sun, Play, ShieldCheck, Rocket, Palette, Smartphone, RefreshCw, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function useTheme() {
@@ -107,7 +106,7 @@ function Header({ active }: { active: string }) {
     { id: "docs", label: "Docs" },
   ];
   return (
-    <header id="site-header" className={cn("header-blur", scrolled && "header-scrolled")}> 
+    <header id="site-header" className={cn("header-blur", scrolled && "header-scrolled")}>
       <nav className="mx-auto flex max-w-screen-xl items-center justify-between px-6 py-4">
         <div className="text-xl font-bold">
           <span className="bg-gradient-to-r from-rose-400 to-teal-300 bg-clip-text text-transparent">Loveable</span>
