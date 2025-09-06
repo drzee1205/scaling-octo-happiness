@@ -245,7 +245,7 @@ export default function Builder() {
   }, [input]);
 
   useEffect(() => {
-    // restore from URL if present
+    // restore from URL if present, else localStorage
     const hash = location.hash.replace(/^#/, "");
     if (hash) {
       try {
@@ -254,11 +254,24 @@ export default function Builder() {
           const proj = JSON.parse(json) as Project;
           setInput(proj.command);
           history.set(proj);
+          return;
         }
       } catch {}
     }
+    try {
+      const saved = localStorage.getItem("loveable:project");
+      if (saved) {
+        const proj = JSON.parse(saved) as Project;
+        setInput(proj.command);
+        history.set(proj);
+      }
+    } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem("loveable:project", JSON.stringify(history.state)); } catch {}
+  }, [history.state]);
 
   const share = () => {
     const encoded = compressToEncodedURIComponent(JSON.stringify(history.state));
